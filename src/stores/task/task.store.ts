@@ -1,6 +1,8 @@
 import { create, StateCreator } from "zustand";
 import type { Task, TaskStatus } from "../../interfaces/task.interface";
-import { devtools } from "zustand/middleware";
+import { devtools, persist } from "zustand/middleware";
+import { v4 as uuidv4 } from "uuid"
+import { immer } from "zustand/middleware/immer";
 
 
 interface TaskState{
@@ -8,13 +10,15 @@ interface TaskState{
     draggingId?: string;
 
     getTaskStatus:(status: TaskStatus) => Task[]
+    addTask:(title:string, status: TaskStatus)=> void
     setDragginTask:(taskId: string) => void;
     removeDraggingTaskId:()=> void
     changeTaskStatus:(taskId:string, status: TaskStatus)=>void
+    onTaskDrop:(status:TaskStatus)=> void
 
 }
 
-const storeAPI: StateCreator<TaskState> = (set, get) => ({
+const storeAPI: StateCreator<TaskState, [["zustand/immer", never]]> = (set, get) => ({
     task:{
         "ABC-1": {id: "ABC-1", title: "Tarea 1", status:"abierto"},
         "ABC-2": {id: "ABC-2", title: "Tarea 2", status:"en-progreso"},
@@ -35,19 +39,34 @@ const storeAPI: StateCreator<TaskState> = (set, get) => ({
     },
 
     changeTaskStatus:(taskId:string, status: TaskStatus)=>{
-        const task = get().task[taskId];
-        task.status = status;
-        set((state)=>(
-            {
-                task:{
-                    ...state.task,
-                    [taskId]: task
-                }
+    
+        set(state=>{
+            state.task[taskId] = {
+                ...state.task[taskId],
+                status
             }
-        ))
+        })
+    },
+
+    onTaskDrop:(status:TaskStatus)=> {
+        const taskId = get().draggingId;
+        if(!taskId) return;
+
+        get().changeTaskStatus(taskId, status);
+        get().removeDraggingTaskId();
+    },
+
+    addTask:(title:string, status: TaskStatus)=> {
+        const newTask = {id: uuidv4(), title, status};
+
+         set(state=>{
+            state.task[newTask.id] = newTask
+         })
     }
 })
 
 export const useTaskStore = create<TaskState>()(
-    devtools(storeAPI)
+    devtools(immer(persist(storeAPI,{
+        name:"task-store"
+    })))
 )

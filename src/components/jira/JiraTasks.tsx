@@ -1,40 +1,18 @@
-import {
-  IoCheckmarkCircleOutline,
-  IoEllipsisHorizontalOutline,
-} from "react-icons/io5";
+import { IoAddCircleOutline, IoCheckmarkCircleOutline } from "react-icons/io5";
 import { Task } from "../../interfaces/task.interface";
 import SingleTask from "./SingleTask";
 import classNames from "classnames";
-import { useTaskStore } from "../../stores/task/task.store";
-import { useState } from "react";
+import useTask from "../../hooks/useTask";
 
 interface Props {
   title: string;
   tasks: Task[];
-  value: "abierto" | "en-progreso" | "hecho";
+  valueStatus: "abierto" | "en-progreso" | "hecho";
 }
 
-export const JiraTasks = ({ title, value, tasks }: Props) => {
-  const IsDragging = useTaskStore((state) => !!state.draggingId);
-  const changeTaskStatus = useTaskStore((state) => state.changeTaskStatus);
-  const draggTaskId = useTaskStore((state) => state.draggingId);
-  const [isOver, setIsOver] = useState(false);
-
-  const dragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsOver(true);
-  };
-
-  const dragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsOver(false);
-  };
-
-  const drop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsOver(false);
-    changeTaskStatus(draggTaskId!, value);
-  };
+export const JiraTasks = ({ title, valueStatus, tasks }: Props) => {
+  const { IsDragging, isOver, dragLeave, dragOver, drop, handleNewTask } =
+    useTask({ valueStatus });
 
   return (
     <div
@@ -60,8 +38,8 @@ export const JiraTasks = ({ title, value, tasks }: Props) => {
           <h4 className="ml-4 text-xl font-bold text-navy-700">{title}</h4>
         </div>
 
-        <button>
-          <IoEllipsisHorizontalOutline />
+        <button onClick={handleNewTask}>
+          <IoAddCircleOutline />
         </button>
       </div>
 
